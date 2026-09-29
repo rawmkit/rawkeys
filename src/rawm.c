@@ -294,6 +294,42 @@ parse_uint_field(const char *text, int base, unsigned long max,
 }
 
 static int
+hex_digit(unsigned char c)
+{
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return -1;
+}
+
+static int
+parse_mask_field(const char *text, unsigned long *value)
+{
+  unsigned long parsed = 0;
+  size_t i;
+
+  if (!text || strlen(text) != 8u)
+    return -1;
+  for (i = 0; i < 8u; ++i) {
+    int digit = hex_digit((unsigned char)text[i]);
+
+    if (digit < 0)
+      return -1;
+    parsed = (parsed << 4) | (unsigned long)digit;
+  }
+  *value = parsed;
+  return 0;
+}
+
+static int
+parse_xid_field(const char *text, unsigned long *value)
+{
+  if (!text || text[0] != '0' || text[1] != 'x' || !text[2])
+    return -1;
+  return parse_uint_field(text + 2, 16, UINT32_MAX, value);
+}
+
+static int
 escaped_field_valid(const char *text)
 {
   size_t i;
@@ -306,12 +342,8 @@ escaped_field_valid(const char *text)
       unsigned char b = (unsigned char)text[i + 2u];
       int hi, lo;
       if (!a || !b) return 0;
-      hi = a >= '0' && a <= '9' ? a - '0' :
-           a >= 'a' && a <= 'f' ? a - 'a' + 10 :
-           a >= 'A' && a <= 'F' ? a - 'A' + 10 : -1;
-      lo = b >= '0' && b <= '9' ? b - '0' :
-           b >= 'a' && b <= 'f' ? b - 'a' + 10 :
-           b >= 'A' && b <= 'F' ? b - 'A' + 10 : -1;
+      hi = hex_digit(a);
+      lo = hex_digit(b);
       if (hi < 0 || lo < 0 || ((hi << 4) | lo) == 0)
         return 0;
       i += 2u;
@@ -362,10 +394,9 @@ rawkeys_rawm_focused(RawkeysRawm *rawm, Window *focused, FILE *err)
         ++p;
       }
       if (count != 8 || strcmp(fields[0], "client") ||
-          parse_uint_field(fields[1], 0, UINT32_MAX, &xid) < 0 || xid == 0 ||
+          parse_xid_field(fields[1], &xid) < 0 || xid == 0 ||
           parse_uint_field(fields[2], 10, INT_MAX, &monitor) < 0 ||
-          strlen(fields[3]) != 8u ||
-          parse_uint_field(fields[3], 16, UINT32_MAX, &tags) < 0 ||
+          parse_mask_field(fields[3], &tags) < 0 ||
           (strcmp(fields[4], "0") && strcmp(fields[4], "1")) ||
           (strcmp(fields[5], "0") && strcmp(fields[5], "1")) ||
           !escaped_field_valid(fields[6]) || !escaped_field_valid(fields[7]))

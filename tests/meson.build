@@ -61,3 +61,18 @@ test(
   args: [xkb_test, display_probe],
   timeout: 15,
 )
+
+rawm_clients_test = executable(
+  'rawm-clients-test',
+  'rawm-clients-test.c',
+  '../src/rawm.c',
+  include_directories: include_directories('../src'),
+  dependencies: x11,
+)
+
+test(
+  'rawm-clients',
+  find_program('rawm-clients.sh'),
+  args: [rawm_clients_test, display_probe],
+  timeout: 15,
+)
