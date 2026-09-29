@@ -1,3 +1,9 @@
+display_probe = executable(
+  'display-probe',
+  'display-probe.c',
+  dependencies: x11,
+)
+
 fake_authority = executable(
   'fake-authority',
   'fake-authority.c',
@@ -31,6 +37,7 @@ test(
   find_program('routing.sh'),
   args: [
     rawkeys_exe,
+    display_probe,
     fake_authority,
     selection_owner,
     send_key,
@@ -51,6 +58,6 @@ xkb_test = executable(
 test(
   'xkb',
   find_program('xkb.sh'),
-  args: [xkb_test],
+  args: [xkb_test, display_probe],
   timeout: 15,
 )

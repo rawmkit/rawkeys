@@ -5,11 +5,12 @@ case $0 in */*) test_dir=${0%/*} ;; *) test_dir=. ;; esac
 . "$test_dir/support/xvfb.sh"
 
 rawkeys=$1
-fake=$2
-owner=$3
-sendkey=$4
-probe=$5
-capture=$6
+display_probe=$2
+fake=$3
+owner=$4
+sendkey=$5
+probe=$6
+capture=$7
 tmp=${TMPDIR:-/tmp}/rawkeys-routing.$$
 mkdir -p "$tmp"
 auth_pid=
@@ -29,8 +30,8 @@ trap cleanup EXIT HUP INT TERM
 skip() { echo "rawkeys routing: skipped ($*)"; exit 77; }
 fail() { echo "rawkeys routing failed: $*" >&2; exit 1; }
 
-for tool in Xvfb xdpyinfo; do command -v "$tool" >/dev/null 2>&1 || skip "$tool unavailable"; done
-test_xvfb_start "$tmp" || skip "Xvfb unavailable"
+command -v Xvfb >/dev/null 2>&1 || skip "Xvfb unavailable"
+test_xvfb_start "$tmp" "$display_probe" || skip "Xvfb unusable"
 
 cat >"$tmp/rawkeys.conf" <<EOF2
 xkb = { per_window = false; };
@@ -73,19 +74,16 @@ wait_log()
 }
 
 "$sendkey" Super_L j || rc=$?
-[ "${rc:-0}" -ne 77 ] || skip "libXtst unavailable"
 [ "${rc:-0}" -eq 0 ] || fail "could not synthesize rawm binding"
 wait_log "rawm focus_stack 1 0"
 
 rc=0
 "$sendkey" XF86AudioMute || rc=$?
-[ "$rc" -ne 77 ] || skip "libXtst unavailable"
 [ "$rc" -eq 0 ] || fail "could not synthesize rawpanel binding"
 wait_log "rawpanel volume_mute"
 
 rc=0
 "$sendkey" Super_L r || rc=$?
-[ "$rc" -ne 77 ] || skip "libXtst unavailable"
 [ "$rc" -eq 0 ] || fail "could not synthesize exec binding"
 n=0
 while [ ! -s "$tmp/exec" ]; do
@@ -95,7 +93,6 @@ done
 
 rc=0
 "$sendkey" Super_L n || rc=$?
-[ "$rc" -ne 77 ] || skip "libXtst unavailable"
 [ "$rc" -eq 0 ] || fail "could not synthesize rename binding"
 wait_log "rawm rename_tag work"
 
