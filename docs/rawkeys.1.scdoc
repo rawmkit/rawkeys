@@ -17,7 +17,7 @@ are started only from configured argv vectors.
 
 rawkeys does not reconstruct window-manager state from EWMH. When per-window
 XKB tracking is enabled it consumes focused-client identity from rawm's
-published authoritative state.
+published admitted-client inventory.
 
 # OPTIONS
 

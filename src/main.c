@@ -456,16 +456,21 @@ main(int argc, char **argv)
         if (event.type == DestroyNotify) {
           rawm.owner = None;
           (void)rawkeys_xkb_focus(&xkb, None, stderr);
-        } else if (rawkeys_rawm_focused(&rawm, &focused, NULL) == 0)
+        } else if (rawkeys_rawm_focused(&rawm, &focused, stderr) == 0)
           (void)rawkeys_xkb_focus(&xkb, focused, stderr);
+        else
+          (void)rawkeys_xkb_focus(&xkb, None, stderr);
       }
     }
     {
       Window focused = None;
       int refreshed = rawkeys_rawm_refresh(&rawm, NULL);
-      if (refreshed > 0 && rawkeys_rawm_focused(&rawm, &focused, NULL) == 0)
-        (void)rawkeys_xkb_focus(&xkb, focused, stderr);
-      else if (refreshed == 0)
+      if (refreshed > 0) {
+        if (rawkeys_rawm_focused(&rawm, &focused, stderr) == 0)
+          (void)rawkeys_xkb_focus(&xkb, focused, stderr);
+        else
+          (void)rawkeys_xkb_focus(&xkb, None, stderr);
+      } else if (refreshed == 0)
         (void)rawkeys_xkb_focus(&xkb, None, stderr);
     }
   }

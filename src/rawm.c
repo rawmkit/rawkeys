@@ -3,6 +3,7 @@
 #include <X11/Xatom.h>
 
 #include <errno.h>
+#include <limits.h>
 #include <poll.h>
 #include <stdint.h>
 #include <time.h>
@@ -66,7 +67,7 @@ rawkeys_rawm_init(RawkeysRawm *rawm, Display *display, int screen)
   rawm->selection = XInternAtom(display, name, False);
   rawm->version = XInternAtom(display, "_RAWM_CONTROL_VERSION", False);
   rawm->supported = XInternAtom(display, "_RAWM_SUPPORTED_COMMANDS", False);
-  rawm->state = XInternAtom(display, "_RAWM_STATE", False);
+  rawm->clients = XInternAtom(display, "_RAWM_CLIENTS", False);
   rawm->command = XInternAtom(display, "_RAWM_COMMAND", False);
   rawm->command_text = XInternAtom(display, "_RAWM_COMMAND_TEXT", False);
   rawm->utf8 = XInternAtom(display, "UTF8_STRING", False);
@@ -247,19 +248,23 @@ rawkeys_rawm_send_text(RawkeysRawm *rawm, const char *action,
 }
 
 static int
-read_state(RawkeysRawm *rawm, char **out, FILE *err)
+read_clients(RawkeysRawm *rawm, char **out, FILE *err)
 {
   Atom type = None;
   int format = 0;
   unsigned long count = 0, after = 0;
   unsigned char *data = NULL;
   char *copy;
-  if (rawkeys_rawm_refresh(rawm, err) <= 0) return -1;
-  if (XGetWindowProperty(rawm->display, rawm->owner, rawm->state, 0,
+
+  if (rawkeys_rawm_refresh(rawm, err) <= 0)
+    return -1;
+  if (XGetWindowProperty(rawm->display, rawm->owner, rawm->clients, 0,
                          (long)(STATE_LIMIT / 4), False, rawm->utf8,
                          &type, &format, &count, &after, &data) != Success ||
-      type != rawm->utf8 || format != 8 || after != 0 || !data) {
+      type != rawm->utf8 || format != 8 || after != 0 || !data ||
+      memchr(data, '\0', count)) {
     if (data) XFree(data);
+    if (err) fputs("rawkeys: malformed rawm client inventory\n", err);
     return -1;
   }
   copy = malloc((size_t)count + 1u);
@@ -271,35 +276,122 @@ read_state(RawkeysRawm *rawm, char **out, FILE *err)
   return 0;
 }
 
+static int
+parse_uint_field(const char *text, int base, unsigned long max,
+                 unsigned long *value)
+{
+  char *end = NULL;
+  unsigned long parsed;
+
+  if (!text || !*text || text[0] == '-' || text[0] == '+')
+    return -1;
+  errno = 0;
+  parsed = strtoul(text, &end, base);
+  if (errno || !end || end == text || *end || parsed > max)
+    return -1;
+  *value = parsed;
+  return 0;
+}
+
+static int
+escaped_field_valid(const char *text)
+{
+  size_t i;
+
+  if (!text)
+    return 0;
+  for (i = 0; text[i]; ++i) {
+    if (text[i] == '%') {
+      unsigned char a = (unsigned char)text[i + 1u];
+      unsigned char b = (unsigned char)text[i + 2u];
+      int hi, lo;
+      if (!a || !b) return 0;
+      hi = a >= '0' && a <= '9' ? a - '0' :
+           a >= 'a' && a <= 'f' ? a - 'a' + 10 :
+           a >= 'A' && a <= 'F' ? a - 'A' + 10 : -1;
+      lo = b >= '0' && b <= '9' ? b - '0' :
+           b >= 'a' && b <= 'f' ? b - 'a' + 10 :
+           b >= 'A' && b <= 'F' ? b - 'A' + 10 : -1;
+      if (hi < 0 || lo < 0 || ((hi << 4) | lo) == 0)
+        return 0;
+      i += 2u;
+    }
+  }
+  return 1;
+}
+
 int
 rawkeys_rawm_focused(RawkeysRawm *rawm, Window *focused, FILE *err)
 {
-  char *state = NULL, *save_line = NULL, *line;
-  int found = 0;
-  if (!focused) return -1;
+  char *snapshot = NULL;
+  char *line;
+  char *next;
+  int first = 1;
+  int focused_seen = 0;
+
+  if (!focused)
+    return -1;
   *focused = None;
-  if (read_state(rawm, &state, err) < 0) return -1;
-  line = strtok_r(state, "\n", &save_line);
-  if (!line || strcmp(line, "rawm-state-v1")) goto out;
-  while ((line = strtok_r(NULL, "\n", &save_line)) != NULL) {
-    char *fields[14], *save = NULL, *tok;
-    int n = 0;
-    if (strncmp(line, "monitor\t", 8)) continue;
-    tok = strtok_r(line, "\t", &save);
-    while (tok && n < 14) { fields[n++] = tok; tok = strtok_r(NULL, "\t", &save); }
-    if (n != 14 || strcmp(fields[0], "monitor")) goto out;
-    if (!strcmp(fields[2], "1")) {
-      char *end = NULL;
-      unsigned long value = strtoul(fields[11], &end, 0);
-      if (!end || *end) goto out;
-      *focused = (Window)value;
-      found = 1;
-      break;
+  if (read_clients(rawm, &snapshot, err) < 0)
+    return -1;
+
+  line = snapshot;
+  while (line) {
+    char *endline = strchr(line, '\n');
+    if (endline) { *endline = '\0'; next = endline + 1; }
+    else next = NULL;
+
+    if (first) {
+      if (strcmp(line, "rawm-clients-v1"))
+        goto malformed;
+      first = 0;
+    } else if (*line) {
+      char *fields[8];
+      size_t count = 0;
+      char *p = line;
+      unsigned long xid, monitor, tags;
+
+      fields[count++] = p;
+      while (*p) {
+        if (*p == '\t') {
+          *p = '\0';
+          if (count >= sizeof(fields) / sizeof(fields[0]))
+            goto malformed;
+          fields[count++] = p + 1;
+        }
+        ++p;
+      }
+      if (count != 8 || strcmp(fields[0], "client") ||
+          parse_uint_field(fields[1], 0, UINT32_MAX, &xid) < 0 || xid == 0 ||
+          parse_uint_field(fields[2], 10, INT_MAX, &monitor) < 0 ||
+          strlen(fields[3]) != 8u ||
+          parse_uint_field(fields[3], 16, UINT32_MAX, &tags) < 0 ||
+          (strcmp(fields[4], "0") && strcmp(fields[4], "1")) ||
+          (strcmp(fields[5], "0") && strcmp(fields[5], "1")) ||
+          !escaped_field_valid(fields[6]) || !escaped_field_valid(fields[7]))
+        goto malformed;
+      (void)monitor;
+      (void)tags;
+      if (fields[5][0] == '1') {
+        if (focused_seen || fields[4][0] != '1')
+          goto malformed;
+        *focused = (Window)xid;
+        focused_seen = 1;
+      }
     }
+    line = next;
   }
-out:
-  free(state);
-  return found ? 0 : -1;
+  free(snapshot);
+  if (first)
+    goto malformed_no_snapshot;
+  return 0;
+
+malformed:
+  free(snapshot);
+malformed_no_snapshot:
+  *focused = None;
+  if (err) fputs("rawkeys: malformed rawm client inventory\n", err);
+  return -1;
 }
 
 bool
@@ -308,7 +400,7 @@ rawkeys_rawm_event(const RawkeysRawm *rawm, const XEvent *event)
   if (!rawm || !event || rawm->owner == None) return false;
   if (event->type == PropertyNotify)
     return event->xproperty.window == rawm->owner &&
-           event->xproperty.atom == rawm->state;
+           event->xproperty.atom == rawm->clients;
   if (event->type == DestroyNotify)
     return event->xdestroywindow.window == rawm->owner;
   return false;

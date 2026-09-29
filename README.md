@@ -19,7 +19,7 @@ through rawm's `rename_tag` command payload. This is keyboard-input policy; the
 window-manager mutation remains rawm authority.
 
 Per-window keyboard layout state belongs to rawkeys. When enabled, rawkeys
-observes focused-client identity from rawm's authoritative state snapshot. It
+observes focused-client identity from rawm's authoritative client inventory. It
 stores the last XKB group in the `_RAWKEYS_XKB_GROUP` property on that client
 window and restores it on later focus. It does not infer focus by walking the
 X tree or `_NET_ACTIVE_WINDOW`.

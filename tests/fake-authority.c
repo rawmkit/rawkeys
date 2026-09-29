@@ -72,7 +72,7 @@ main(int argc, char **argv)
   Window root, rawm_owner, panel_owner;
   Atom rawm_sel, panel_sel, rawm_command, panel_command;
   Atom rawm_focus, rawm_rename, rawm_text, panel_mute;
-  Atom utf8, rawm_state;
+  Atom utf8, rawm_clients;
   int screen;
   char selection[64];
   struct sigaction sa;
@@ -82,12 +82,7 @@ main(int argc, char **argv)
   static const char *const panel_commands[] = {
     "_RAWPANEL_CMD_VOLUME_MUTE"
   };
-  static const char state[] =
-    "rawm-state-v1\n"
-    "tag-count\t9\n"
-    "selected-monitor\t0\n"
-    "monitor\t0\t1\t0\t0\t800\t600\t00000001\t00000000\t00000000\ttile\t0x0\t1\t0.550000\n"
-    "stack\t0\t0\t0\n";
+  static const char clients[] = "rawm-clients-v1\n";
 
   if (argc != 2) {
     fprintf(stderr, "usage: %s LOG\n", argv[0]);
@@ -115,9 +110,9 @@ main(int argc, char **argv)
   set_atoms(dpy, rawm_owner, "_RAWM_SUPPORTED_COMMANDS",
             rawm_commands, sizeof(rawm_commands) / sizeof(rawm_commands[0]));
   utf8 = XInternAtom(dpy, "UTF8_STRING", False);
-  rawm_state = XInternAtom(dpy, "_RAWM_STATE", False);
-  XChangeProperty(dpy, rawm_owner, rawm_state, utf8, 8, PropModeReplace,
-                  (const unsigned char *)state, (int)strlen(state));
+  rawm_clients = XInternAtom(dpy, "_RAWM_CLIENTS", False);
+  XChangeProperty(dpy, rawm_owner, rawm_clients, utf8, 8, PropModeReplace,
+                  (const unsigned char *)clients, (int)strlen(clients));
 
   set_cardinal(dpy, panel_owner, "_RAWPANEL_CONTROL_VERSION", 1);
   set_atoms(dpy, panel_owner, "_RAWPANEL_SUPPORTED_COMMANDS",

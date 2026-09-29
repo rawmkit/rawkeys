@@ -11,7 +11,7 @@ typedef struct {
   Atom selection;
   Atom version;
   Atom supported;
-  Atom state;
+  Atom clients;
   Atom command;
   Atom command_text;
   Atom utf8;

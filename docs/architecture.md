@@ -2,7 +2,7 @@
 
 rawkeys is the authority for global keyboard policy and per-window XKB group
 state. Its plant is the X11 core keyboard. Its observations are admitted key
-presses, keyboard-map changes, and rawm-published focused-client identity. Its
+presses, keyboard-map changes, and rawm-published admitted-client focus identity. Its
 actuators are explicit rawm commands, explicit rawpanel commands, and configured
 argv execution.
 
@@ -21,7 +21,7 @@ rawm and rawpanel never depend on rawkeys.
 
 rawkeys does not infer the selected client from `_NET_ACTIVE_WINDOW`, enumerate
 clients, interpret rawm private client properties, or mutate rawm state through
-EWMH. Focus identity comes only from rawm's authoritative state snapshot.
+EWMH. Focus identity comes only from rawm's authoritative client inventory.
 
 Per-window XKB group state is rawkeys-owned truth. It is stored directly on the
 client window as `_RAWKEYS_XKB_GROUP`, so XID destruction also destroys the
