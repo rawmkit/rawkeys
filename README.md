@@ -33,8 +33,10 @@ meson test -C build --print-errorlogs
 ```
 
 Dependencies are Xlib and libconfig. Runtime XKB support is provided through
-Xlib. The integration test uses Xvfb and dynamically loads `libXtst.so.6` when
-available; it skips rather than adding a production Xtst dependency.
+Xlib. The integration suite requires Xvfb. The routing test dynamically loads
+`libXtst.so.6` to synthesize real key events; Xtst is a test-runtime dependency
+only and is not linked into the rawkeys executable. Once Xvfb starts, routing
+and XKB contract failures are hard test failures rather than skips.
 
 ## Configuration
 

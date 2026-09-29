@@ -10,3 +10,5 @@
 - Preserve per-window XKB group state using rawm-published focus identity.
 - Own a per-screen singleton/liveness selection.
 - Validate binding targets and action arguments fail-closed.
+- Make Xvfb tests parallel-safe and independent of external display probes.
+- Treat routing and XKB contract failures as test failures once Xvfb is usable.
