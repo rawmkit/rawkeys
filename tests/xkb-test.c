@@ -44,8 +44,10 @@ main(void)
   unsigned long group = 99;
 
   dpy = XOpenDisplay(NULL);
-  if (!dpy)
-    return 77;
+  if (!dpy) {
+    fputs("rawkeys xkb: cannot open prepared Xvfb display\n", stderr);
+    return EXIT_FAILURE;
+  }
   XSetErrorHandler(ignore_bad_window);
   root = DefaultRootWindow(dpy);
   first = XCreateSimpleWindow(dpy, root, 0, 0, 10, 10, 0, 0, 0);
@@ -53,10 +55,12 @@ main(void)
   if (first == None || second == None)
     return EXIT_FAILURE;
 
-  if (!XkbLockGroup(dpy, XkbUseCoreKbd, 0))
-    return 77;
+  if (!XkbLockGroup(dpy, XkbUseCoreKbd, 0)) {
+    fputs("rawkeys xkb: XKB group locking is unavailable on prepared Xvfb\n", stderr);
+    return EXIT_FAILURE;
+  }
   if (rawkeys_xkb_init(&xkb, dpy, true, stderr) < 0)
-    return 77;
+    return EXIT_FAILURE;
   if (rawkeys_xkb_focus(&xkb, first, stderr) < 0)
     return EXIT_FAILURE;
   XSync(dpy, False);

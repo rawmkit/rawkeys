@@ -31,16 +31,19 @@ main(int argc, char **argv)
   }
   handle = dlopen("libXtst.so.6", RTLD_NOW | RTLD_LOCAL);
   if (!handle) {
+    fprintf(stderr, "send-key: libXtst.so.6 is required for routing tests: %s\n",
+            dlerror());
     free(codes);
     XCloseDisplay(dpy);
-    return 77;
+    return EXIT_FAILURE;
   }
   *(void **)(&fake) = dlsym(handle, "XTestFakeKeyEvent");
   if (!fake) {
+    fprintf(stderr, "send-key: libXtst.so.6 lacks XTestFakeKeyEvent\n");
     dlclose(handle);
     free(codes);
     XCloseDisplay(dpy);
-    return 77;
+    return EXIT_FAILURE;
   }
   for (i = 0; i < argc - 1; ++i)
     fake(dpy, codes[i], True, CurrentTime);
