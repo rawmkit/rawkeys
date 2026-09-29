@@ -1,0 +1,57 @@
+RAWKEYS(1)
+
+# NAME
+
+rawkeys - global keyboard policy authority for rawmkit
+
+# SYNOPSIS
+
+*rawkeys* [*-c* _FILE_] [*-C*] [*-v*]
+
+# DESCRIPTION
+
+*rawkeys* owns global X11 key grabs and routes admitted key chords to the
+component that owns the requested mutation. Window-manager operations are sent
+to rawm, panel and mixer operations are sent to rawpanel, and external programs
+are started only from configured argv vectors.
+
+rawkeys does not reconstruct window-manager state from EWMH. When per-window
+XKB tracking is enabled it consumes focused-client identity from rawm's
+published authoritative state.
+
+# OPTIONS
+
+*-c* _FILE_
+	Read one explicit configuration file instead of the normal system and user
+	configuration cascade.
+
+*-C*
+	Validate configuration and exit without opening X11 or acquiring key grabs.
+
+*-v*, *--version*
+	Print the version and exit.
+
+*-h*, *--help*
+	Print usage and exit.
+
+# LIFECYCLE
+
+A running instance owns the per-screen selection
+*\_RAWKEYS\_CONTROL\_Sn*. Its owner window publishes
+*\_RAWKEYS\_CONTROL\_VERSION* with value 1. The selection is a singleton and
+liveness boundary; version 0.1 defines no external mutation commands on it.
+
+*SIGHUP* re-executes rawkeys with the original argv, releasing and reacquiring
+all key grabs through normal X connection teardown. *SIGTERM* and *SIGINT*
+terminate it.
+
+# XKB POLICY
+
+With *xkb.per\_window = true*, rawkeys stores the current XKB group on the
+previous focused client and restores the stored group for the new focused
+client. The state property is *\_RAWKEYS\_XKB\_GROUP* and belongs to rawkeys,
+not rawm.
+
+# SEE ALSO
+
+*rawkeys.conf*(5), *rawm*(1), *rawpanel*(1), *rawctl*(1)

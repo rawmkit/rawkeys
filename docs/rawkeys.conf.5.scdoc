@@ -1,0 +1,95 @@
+RAWKEYS.CONF(5)
+
+# NAME
+
+rawkeys.conf - rawkeys global keyboard policy
+
+# DESCRIPTION
+
+rawkeys uses libconfig syntax. System configuration is read from
+_/etc/rawkeys/rawkeys.conf_. User configuration overlays it from
+_$XDG\_CONFIG\_HOME/rawkeys/rawkeys.conf_ or _~/.config/rawkeys/rawkeys.conf_.
+Supplying *-c* selects one explicit file instead.
+
+The top-level settings are *xkb*, *commands*, and *bindings*. Unknown settings
+are rejected.
+
+# XKB
+
+The *xkb* group accepts:
+
+*per\_window*
+	Boolean. When true, preserve XKB core-keyboard group state per
+	rawm-admitted focused client. The default is true.
+
+# COMMANDS
+
+*commands* is a group whose members are non-empty argv lists. No shell parsing
+or interpolation is performed.
+
+```
+commands = {
+  terminal = ("xterm");
+  tag_name = ("rawmenu", "-M", "input", "-p", "tag");
+};
+```
+
+# BINDINGS
+
+*bindings* is a list of groups. Every binding requires *modifiers*, *key*, and
+*target*. The same modifier/key pair may appear only once.
+
+*modifiers*
+	A list containing any of *Shift*, *Control*, *Mod1*, *Mod2*, *Mod3*,
+	*Mod4*, or *Mod5*.
+
+*key*
+	An X keysym name accepted by Xlib.
+
+*target = "exec"*
+	Requires *command*, naming one entry in *commands*. No action or action
+	arguments are accepted.
+
+*target = "rawpanel"*
+	Requires *action*. Version 0.1 accepts *toggle\_visibility*, *volume\_up*,
+	*volume\_down*, and *volume\_mute*. The action must also be advertised by the
+	currently running rawpanel authority.
+
+*target = "rawm"*
+	Requires *action*. The action must be advertised by the current rawm
+	authority. Supported configuration arguments follow rawm protocol semantics:
+	*number* for directional/index/delta operations, *tag* for tag selectors,
+	*layout* for layout selection, *delta* or *factor* for master-factor
+	changes, and *restart* for the quit command.
+
+For *rename\_tag*, *capture* names a configured argv vector. rawkeys captures
+one stdout line and forwards it as rawm's text payload. Other rawm actions do
+not accept *capture*.
+
+Example:
+
+```
+bindings = (
+  { modifiers = ("Mod4"); key = "j";
+    target = "rawm"; action = "focus_stack"; number = 1; },
+
+  { modifiers = (); key = "XF86AudioMute";
+    target = "rawpanel"; action = "volume_mute"; },
+
+  { modifiers = ("Mod4"); key = "Return";
+    target = "exec"; command = "terminal"; },
+
+  { modifiers = ("Mod4"); key = "n";
+    target = "rawm"; action = "rename_tag"; capture = "tag_name"; }
+);
+```
+
+# AUTHORITY BOUNDARIES
+
+rawkeys owns key grabs and XKB policy only. It does not implement rawm actions,
+panel state, volume state, session supervision, pointer move/resize, or program
+discovery.
+
+# SEE ALSO
+
+*rawkeys*(1), *rawm*(1), *rawpanel*(1)
