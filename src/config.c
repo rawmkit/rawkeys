@@ -8,6 +8,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef SYSCONFDIR
+#define SYSCONFDIR "/etc"
+#endif
+
 static char *
 dupstr(const char *s)
 {
@@ -388,23 +392,27 @@ file_readable(const char *path)
 int
 rawkeys_config_load(RawkeysConfig *cfg, const char *explicit_path, FILE *err)
 {
+  char system[PATH_MAX];
   char user[PATH_MAX];
   const char *xdg, *home;
+  int n;
 
   if (explicit_path)
     return apply_config(err, cfg, explicit_path);
 
-  if (file_readable("/etc/rawkeys/rawkeys.conf") &&
-      apply_config(err, cfg, "/etc/rawkeys/rawkeys.conf") < 0)
+  n = snprintf(system, sizeof(system), "%s/rawkeys/rawkeys.conf", SYSCONFDIR);
+  if (n < 0 || (size_t)n >= sizeof(system))
+    return -1;
+  if (file_readable(system) && apply_config(err, cfg, system) < 0)
     return -1;
 
   xdg = getenv("XDG_CONFIG_HOME");
   home = getenv("HOME");
-  if (xdg && *xdg) {
-    int n = snprintf(user, sizeof(user), "%s/rawkeys/rawkeys.conf", xdg);
+  if (xdg && xdg[0] == '/') {
+    n = snprintf(user, sizeof(user), "%s/rawkeys/rawkeys.conf", xdg);
     if (n < 0 || (size_t)n >= sizeof(user)) return -1;
-  } else if (home && *home) {
-    int n = snprintf(user, sizeof(user), "%s/.config/rawkeys/rawkeys.conf", home);
+  } else if (home && home[0] == '/') {
+    n = snprintf(user, sizeof(user), "%s/.config/rawkeys/rawkeys.conf", home);
     if (n < 0 || (size_t)n >= sizeof(user)) return -1;
   } else return 0;
   if (file_readable(user) && apply_config(err, cfg, user) < 0) return -1;
