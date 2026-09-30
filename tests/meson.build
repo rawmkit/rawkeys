@@ -32,6 +32,20 @@ test(
   args: [rawkeys_exe, meson.project_source_root() / 'config' / 'rawkeys.conf'],
 )
 
+config_defaults_test = executable(
+  'config-defaults-test',
+  'config-defaults-test.c',
+  '../src/config.c',
+  include_directories: include_directories('../src'),
+  dependencies: libconfig,
+)
+
+test(
+  'config-defaults',
+  config_defaults_test,
+  args: [meson.project_source_root() / 'config' / 'rawkeys.conf'],
+)
+
 test(
   'routing',
   find_program('routing.sh'),

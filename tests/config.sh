@@ -66,4 +66,7 @@ if "$rawkeys" -C -c "$tmp/bad-capture.conf" >"$tmp/out" 2>"$tmp/err"; then
 fi
 grep -q 'capture command' "$tmp/err" || fail "capture failure was not explained"
 
+XDG_CONFIG_HOME=relative HOME= "$rawkeys" -C ||
+  fail "relative XDG_CONFIG_HOME was not ignored"
+
 echo "rawkeys config: ok"
