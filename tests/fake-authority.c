@@ -163,10 +163,13 @@ main(int argc, char **argv)
         if (requestor == None ||
             XGetWindowProperty(dpy, requestor, rawm_text, 0, 1024, True, utf8,
                                &type, &format, &count, &after, &data) != Success ||
-            type != utf8 || format != 8 || after != 0 || !data)
+            type != utf8 || format != 8 || after != 0 || (count && !data))
           return EXIT_FAILURE;
-        snprintf(line, sizeof(line), "rawm rename_tag %.*s", (int)count, data);
-        XFree(data);
+        if (count)
+          snprintf(line, sizeof(line), "rawm rename_tag %.*s", (int)count, data);
+        else
+          snprintf(line, sizeof(line), "rawm rename_tag ");
+        if (data) XFree(data);
         if (append_line(argv[1], line) < 0) return EXIT_FAILURE;
       } else if (ev.xclient.window == panel_owner &&
                  ev.xclient.message_type == panel_command &&

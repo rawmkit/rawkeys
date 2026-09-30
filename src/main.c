@@ -205,7 +205,8 @@ capture_command(const RawkeysCommand *cmd, char *buffer, size_t capacity)
   int fds[2], status;
   pid_t pid;
   size_t used = 0;
-  int got_line = 0;
+  int first_line_done = 0;
+  int saw_output = 0;
   int overflow = 0;
   if (!cmd || !cmd->argv || !cmd->argv[0] || !buffer || capacity < 2) return -1;
   if (pipe(fds) < 0) {
@@ -233,7 +234,7 @@ capture_command(const RawkeysCommand *cmd, char *buffer, size_t capacity)
   }
   close(fds[1]);
   buffer[0] = '\0';
-  while (!got_line) {
+  for (;;) {
     char chunk[128];
     ssize_t n = read(fds[0], chunk, sizeof(chunk));
     ssize_t i;
@@ -242,8 +243,10 @@ capture_command(const RawkeysCommand *cmd, char *buffer, size_t capacity)
       break;
     }
     if (n == 0) break;
+    saw_output = 1;
     for (i = 0; i < n; ++i) {
-      if (chunk[i] == '\n') { got_line = 1; break; }
+      if (first_line_done) continue;
+      if (chunk[i] == '\n') { first_line_done = 1; continue; }
       if (chunk[i] == '\r') continue;
       if (used + 1u < capacity)
         buffer[used++] = chunk[i];
@@ -258,8 +261,7 @@ capture_command(const RawkeysCommand *cmd, char *buffer, size_t capacity)
     fputs("rawkeys: captured command output exceeds the supported line limit\n", stderr);
     return -1;
   }
-  if (!used) return 0;
-  return 1;
+  return saw_output ? 1 : 0;
 }
 
 static int

@@ -37,14 +37,18 @@ cat >"$tmp/rawkeys.conf" <<EOF2
 xkb = { per_window = false; };
 commands = {
   probe = ("$probe", "$tmp/exec");
-  capture = ("$capture");
+  capture = ("$capture", "value");
+  capture_empty = ("$capture", "empty");
+  capture_cancel = ("$capture", "cancel");
 };
 bindings = (
   { modifiers = ("Mod4"); key = "j"; target = "rawm"; action = "focus_stack"; number = 1; },
   { modifiers = ("Mod4"); key = "t"; target = "rawm"; action = "set_layout"; layout = "tile"; },
   { modifiers = (); key = "XF86AudioMute"; target = "rawpanel"; action = "volume_mute"; },
   { modifiers = ("Mod4"); key = "r"; target = "exec"; command = "probe"; },
-  { modifiers = ("Mod4"); key = "n"; target = "rawm"; action = "rename_tag"; capture = "capture"; }
+  { modifiers = ("Mod4"); key = "n"; target = "rawm"; action = "rename_tag"; capture = "capture"; },
+  { modifiers = ("Mod4", "Shift"); key = "n"; target = "rawm"; action = "rename_tag"; capture = "capture_empty"; },
+  { modifiers = ("Mod4", "Control"); key = "n"; target = "rawm"; action = "rename_tag"; capture = "capture_cancel"; }
 );
 EOF2
 
@@ -101,6 +105,20 @@ rc=0
 "$sendkey" Super_L n || rc=$?
 [ "$rc" -eq 0 ] || fail "could not synthesize rename binding"
 wait_log "rawm rename_tag work"
+
+rc=0
+"$sendkey" Super_L Shift_L n || rc=$?
+[ "$rc" -eq 0 ] || fail "could not synthesize empty rename binding"
+wait_log "rawm rename_tag "
+empty_count=$(grep -Fxc "rawm rename_tag " "$tmp/authority.log" || true)
+[ "$empty_count" -eq 1 ] || fail "empty captured line was not forwarded exactly once"
+
+rc=0
+"$sendkey" Super_L Control_L n || rc=$?
+[ "$rc" -eq 0 ] || fail "could not synthesize cancelled rename binding"
+sleep 0.15
+[ "$(grep -c '^rawm rename_tag ' "$tmp/authority.log" || true)" -eq 2 ] ||
+  fail "capture cancellation emitted a rename command"
 
 if "$rawkeys" -c "$tmp/rawkeys.conf" >"$tmp/second.out" 2>"$tmp/second.err"; then
   fail "second keyboard authority was admitted"
