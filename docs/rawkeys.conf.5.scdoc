@@ -7,9 +7,11 @@ rawkeys.conf - rawkeys global keyboard policy
 # DESCRIPTION
 
 rawkeys uses libconfig syntax. System configuration is read from
-_/etc/rawkeys/rawkeys.conf_. User configuration overlays it from
-_$XDG\_CONFIG\_HOME/rawkeys/rawkeys.conf_ or _~/.config/rawkeys/rawkeys.conf_.
-Supplying *-c* selects one explicit file instead.
+_${SYSCONFDIR}/rawkeys/rawkeys.conf_ (normally _/etc/rawkeys/rawkeys.conf_).
+User configuration overlays it from
+_$XDG\_CONFIG\_HOME/rawkeys/rawkeys.conf_ when *XDG_CONFIG_HOME* is absolute,
+or from _~/.config/rawkeys/rawkeys.conf_ otherwise. Missing default files are
+allowed. Supplying *-c* selects one explicit file instead.
 
 The top-level settings are *xkb*, *commands*, and *bindings*. Unknown settings
 are rejected.

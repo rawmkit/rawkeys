@@ -41,8 +41,9 @@ and XKB contract failures are hard test failures rather than skips.
 ## Configuration
 
 System policy is read from `/etc/rawkeys/rawkeys.conf`; user policy overlays it
-from `$XDG_CONFIG_HOME/rawkeys/rawkeys.conf` or
-`~/.config/rawkeys/rawkeys.conf`. `-c FILE` selects one explicit file instead.
+from `$XDG_CONFIG_HOME/rawkeys/rawkeys.conf` when `XDG_CONFIG_HOME` is absolute,
+or from `~/.config/rawkeys/rawkeys.conf` otherwise. Missing default files are
+allowed. `-c FILE` selects one explicit file instead.
 
 See `rawkeys.conf(5)`.
 
