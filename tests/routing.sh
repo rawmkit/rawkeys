@@ -109,7 +109,12 @@ wait_log "rawm rename_tag work"
 rc=0
 "$sendkey" Super_L Shift_L n || rc=$?
 [ "$rc" -eq 0 ] || fail "could not synthesize empty rename binding"
-wait_log "rawm rename_tag "
+n=0
+while [ "$(grep -Fxc "rawm rename_tag " "$tmp/authority.log" 2>/dev/null || true)" -lt 1 ]; do
+  n=$((n + 1))
+  [ "$n" -lt 60 ] || { cat "$tmp/authority.log" >&2 || true; fail "missing exact empty rename record"; }
+  sleep 0.05
+done
 empty_count=$(grep -Fxc "rawm rename_tag " "$tmp/authority.log" || true)
 [ "$empty_count" -eq 1 ] || fail "empty captured line was not forwarded exactly once"
 
