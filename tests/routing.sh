@@ -41,6 +41,7 @@ commands = {
 };
 bindings = (
   { modifiers = ("Mod4"); key = "j"; target = "rawm"; action = "focus_stack"; number = 1; },
+  { modifiers = ("Mod4"); key = "t"; target = "rawm"; action = "set_layout"; layout = "tile"; },
   { modifiers = (); key = "XF86AudioMute"; target = "rawpanel"; action = "volume_mute"; },
   { modifiers = ("Mod4"); key = "r"; target = "exec"; command = "probe"; },
   { modifiers = ("Mod4"); key = "n"; target = "rawm"; action = "rename_tag"; capture = "capture"; }
@@ -76,6 +77,11 @@ wait_log()
 "$sendkey" Super_L j || rc=$?
 [ "${rc:-0}" -eq 0 ] || fail "could not synthesize rawm binding"
 wait_log "rawm focus_stack 1 0"
+
+rc=0
+"$sendkey" Super_L t || rc=$?
+[ "$rc" -eq 0 ] || fail "could not synthesize explicit layout binding"
+wait_log "rawm set_layout 0 0"
 
 rc=0
 "$sendkey" XF86AudioMute || rc=$?

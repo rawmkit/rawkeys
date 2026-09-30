@@ -277,6 +277,7 @@ replace_bindings(FILE *err, RawkeysConfig *cfg, config_setting_t *list)
         get_optional_string(entry, "capture", &b->capture, err) < 0 ||
         get_optional_string(entry, "layout", &b->layout, err) < 0)
       goto fail;
+    b->has_layout = b->layout != NULL;
     s = config_setting_get_member(entry, "number");
     if (s) {
       if (config_setting_type(s) != CONFIG_TYPE_INT) {
