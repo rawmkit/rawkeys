@@ -71,13 +71,14 @@ main(int argc, char **argv)
   Display *dpy;
   Window root, rawm_owner, panel_owner;
   Atom rawm_sel, panel_sel, rawm_command, panel_command;
-  Atom rawm_focus, rawm_rename, rawm_text, panel_mute;
+  Atom rawm_focus, rawm_layout, rawm_rename, rawm_text, panel_mute;
   Atom utf8, rawm_clients;
   int screen;
   char selection[64];
   struct sigaction sa;
   static const char *const rawm_commands[] = {
-    "_RAWM_CMD_FOCUS_STACK", "_RAWM_CMD_RENAME_TAG"
+    "_RAWM_CMD_FOCUS_STACK", "_RAWM_CMD_SET_LAYOUT",
+    "_RAWM_CMD_RENAME_TAG"
   };
   static const char *const panel_commands[] = {
     "_RAWPANEL_CMD_VOLUME_MUTE"
@@ -121,6 +122,7 @@ main(int argc, char **argv)
   rawm_command = XInternAtom(dpy, "_RAWM_COMMAND", False);
   panel_command = XInternAtom(dpy, "_RAWPANEL_COMMAND", False);
   rawm_focus = XInternAtom(dpy, "_RAWM_CMD_FOCUS_STACK", False);
+  rawm_layout = XInternAtom(dpy, "_RAWM_CMD_SET_LAYOUT", False);
   rawm_rename = XInternAtom(dpy, "_RAWM_CMD_RENAME_TAG", False);
   rawm_text = XInternAtom(dpy, "_RAWM_COMMAND_TEXT", False);
   panel_mute = XInternAtom(dpy, "_RAWPANEL_CMD_VOLUME_MUTE", False);
@@ -142,6 +144,12 @@ main(int argc, char **argv)
           ev.xclient.message_type == rawm_command &&
           (Atom)(unsigned long)ev.xclient.data.l[1] == rawm_focus) {
         snprintf(line, sizeof(line), "rawm focus_stack %ld %ld",
+                 ev.xclient.data.l[2], ev.xclient.data.l[3]);
+        if (append_line(argv[1], line) < 0) return EXIT_FAILURE;
+      } else if (ev.xclient.window == rawm_owner &&
+                 ev.xclient.message_type == rawm_command &&
+                 (Atom)(unsigned long)ev.xclient.data.l[1] == rawm_layout) {
+        snprintf(line, sizeof(line), "rawm set_layout %ld %ld",
                  ev.xclient.data.l[2], ev.xclient.data.l[3]);
         if (append_line(argv[1], line) < 0) return EXIT_FAILURE;
       } else if (ev.xclient.window == rawm_owner &&
