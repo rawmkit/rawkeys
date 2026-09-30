@@ -15,8 +15,10 @@ A binding has exactly one target:
 
 The only composite operation in version 0.1 is rawm tag renaming. A configured
 capture command obtains one line of user input and rawkeys forwards that text
-through rawm's `rename_tag` command payload. This is keyboard-input policy; the
-window-manager mutation remains rawm authority.
+through rawm's `rename_tag` command payload. No output cancels the operation; an
+empty first line is forwarded as an empty payload and restores rawm's numeric tag
+label. This is keyboard-input policy; the window-manager mutation remains rawm
+authority.
 
 Per-window keyboard layout state belongs to rawkeys. When enabled, rawkeys
 observes focused-client identity from rawm's authoritative client inventory. It

@@ -65,8 +65,9 @@ commands = {
 	changes, and *restart* for the quit command.
 
 For *rename\_tag*, *capture* names a configured argv vector. rawkeys captures
-one stdout line and forwards it as rawm's text payload. Other rawm actions do
-not accept *capture*.
+one stdout line and forwards it as rawm's text payload. No stdout cancels the
+operation; an empty first line is forwarded and restores rawm's numeric tag
+label. Other rawm actions do not accept *capture*.
 
 Example:
 

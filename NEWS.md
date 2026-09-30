@@ -1,6 +1,8 @@
 # rawkeys NEWS
 
 ## 0.1.0
+- Preserve tag-rename capture semantics across the authority split: no output cancels, an empty accepted line restores the numeric tag label, and non-empty input renames the viewed tag.
+
 - Preserve explicit `set_layout` arguments so tile/floating/monocle/bstack/grid bindings select their requested layout instead of degrading to the previous-layout toggle.
 
 - Establish a standalone global-keyboard authority.
